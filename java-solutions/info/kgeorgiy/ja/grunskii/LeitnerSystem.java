@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
 
+// :NOTE: * State not restored on restart
 /**
  * This class has main logic about memorizing words
  */
@@ -18,26 +19,28 @@ public class LeitnerSystem {
      *
      * @param args contains name of InputFile
      */
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         // launch
         if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
             System.err.println("Incorrect input");
         }
+        // :NOTE: * NPE, AIOOBE
         new LeitnerSystem().run(args[0], args[1]);
     }
 
     // This thing run
-    private void run(String fileNameString, String localeString) {
-        Path filePath = Paths.get(fileNameString);
-        Locale locale = new Locale.Builder().setLanguage(localeString).build();
+    private void run(final String fileNameString, final String localeString) {
+        final Path filePath = Paths.get(fileNameString);
+        final Locale locale = new Locale.Builder().setLanguage(localeString).build();
+        // :NOTE: * Platform-dependent path
         bundle = ResourceBundle.getBundle(Paths.get("info", "kgeorgiy", "ja", "grunskii", "LanguageBundle").toString(), locale);
-        Data data = loadData(filePath, locale);
+        final Data data = loadData(filePath, locale);
         printIntroduction();
         startMemorize(data, locale);
     }
 
     // loadData
-    private Data loadData(Path filePath, Locale locale) {
+    private Data loadData(final Path filePath, final Locale locale) {
         return new Data(filePath, locale);
     }
 
@@ -46,22 +49,25 @@ public class LeitnerSystem {
         System.out.println(bundle.getString("InfoHelp"));
     }
 
-    private String getWord(Data data, Locale locale) {
-        String result = data.getRandomWord();
+    // :NOTE: * Extra "locale" parameter instead of field
+    private String getWord(final Data data, final Locale locale) {
+        final String result = data.getRandomWord();
         System.out.println(getMessage(locale, "Translate", result));
         return result;
     }
 
-    private void startMemorize(Data data, Locale locale) {
+    private void startMemorize(final Data data, final Locale locale) {
         while (true) {
-            String word = getWord(data, locale);
-            String correctAnswer = data.getCorrectTranslate(word);
+            final String word = getWord(data, locale);
+            final String correctAnswer = data.getCorrectTranslate(word);
+            // :NOTE: - No encoding specified
             final BufferedReader reader =new BufferedReader(new InputStreamReader(System.in));
             String quire;
             try {
                 quire = reader.readLine().trim();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 quire = "";
+                // :NOTE: - Not localized
                 System.err.println("Can't read from console");
                 System.exit(1);
             }
@@ -76,17 +82,18 @@ public class LeitnerSystem {
             }
         }
     }
-    public void writeBaskets(List<Map<String, String>> baskets) {
+    public void writeBaskets(final List<Map<String, String>> baskets) {
         for (int i = 0; i < baskets.size(); ++i) {
             System.out.println(i + 1);
-            for (Map.Entry<String, String> entry : baskets.get(i).entrySet()) {
+            for (final Map.Entry<String, String> entry : baskets.get(i).entrySet()) {
                 System.out.println(entry.getKey() + "|" + entry.getValue());
             }
         }
     }
 
-    private String getMessage(Locale locale, String patternInBundle, Object... values) {
-        MessageFormat messageFormat = new MessageFormat(bundle.getString(patternInBundle), locale);
+    private String getMessage(final Locale locale, final String patternInBundle, final Object... values) {
+        // :NOTE: * MessageFormat not reused
+        final MessageFormat messageFormat = new MessageFormat(bundle.getString(patternInBundle), locale);
         return messageFormat.format(values);
     }
 
