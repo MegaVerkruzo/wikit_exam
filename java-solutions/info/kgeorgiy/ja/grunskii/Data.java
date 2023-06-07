@@ -15,7 +15,7 @@ import static java.lang.Math.*;
 public final class Data {
     private final Random random = new Random();
 
-    protected final List<Map<String, String>> baskets;
+    private final List<Map<String, String>> baskets;
     private final Map<String, WordInfo> words = new HashMap<>();
 
     private record WordInfo(String translated, int basket) {
@@ -26,17 +26,20 @@ public final class Data {
         return parent.resolve(".save_" + fileName.getFileName());
     }
 
+    public List<Map<String, String>> getBaskets() {
+        return baskets;
+    }
+
     public Data(final Path fileDictionary, final Locale locale) {
-        // :NOTE: - Naming
-        List<Map<String, String>> baskets1;
-        Map<String, String> words1;
+        List<Map<String, String>> currentBaskets;
+        Map<String, String> currentWords;
         try {
             final List<String> lines = Files.readAllLines(fileDictionary, StandardCharsets.UTF_8);
 
-            words1 = getWords(lines);
+            currentWords = getWords(lines);
 
         } catch (final IOException e) {
-            words1 = null;
+            currentWords = null;
             System.err.println("Can't read input dictionary");
             System.exit(1);
         }
@@ -44,24 +47,24 @@ public final class Data {
         try {
             final List<String> lines = Files.readAllLines(getSaveFileName(fileDictionary), StandardCharsets.UTF_8);
 
-            baskets1 = getBuckets(lines);
+            currentBaskets = getBuckets(lines);
         } catch (final IOException e) {
-            baskets1 = null;
+            currentBaskets = null;
             System.err.println("Can't read input dictionary");
             System.exit(1);
         }
 
         {
             final Map<String, String> check = new HashMap<>();
-            for (final Map<String, String> currentMap : baskets1) {
+            for (final Map<String, String> currentMap : currentBaskets) {
                 check.putAll(currentMap);
             }
 
-            if (!check.equals(words1)) {
+            if (!check.equals(currentWords)) {
                 baskets = new ArrayList<>(Collections.nCopies(10, new HashMap<>()));
-                baskets.get(0).putAll(words1);
+                baskets.get(0).putAll(currentWords);
             } else {
-                baskets = baskets1;
+                baskets = currentBaskets;
             }
         }
         for (int i = 0; i < baskets.size(); ++i) {
@@ -94,8 +97,12 @@ public final class Data {
     private Map<String, String> getWords(final List<String> lines) {
         final Map<String, String> words = new HashMap<>();
         for (final String str : lines) {
-            // :NOTE: * No input validation
             final int indexDelimiter = str.indexOf('|');
+            if (indexDelimiter == -1 || str.indexOf('|', indexDelimiter + 1) != -1) {
+                System.err.println("Input dictionary isn't correct, example of correct line without brackets: \" Do | Делать \"");
+                throw new RuntimeException();
+            }
+
             final String prefix = str.substring(0, indexDelimiter).toLowerCase().trim();
             final String suffix = str.substring(indexDelimiter + 1).toLowerCase().trim();
 
@@ -127,6 +134,10 @@ public final class Data {
         return "";
     }
 
+    public void setFirstBasket(final String word) {
+        changeBasket(word, 0);
+    }
+
     public void increaseBasket(final String word) {
         changeBasket(word, min(words.get(word).basket + 1, 9));
     }
@@ -138,9 +149,5 @@ public final class Data {
         words.remove(word);
         baskets.get(newBasket).put(word, wordInfo.translated);
         words.put(word, new WordInfo(wordInfo.translated, newBasket));
-    }
-
-    public void setFirstBasket(final String word) {
-        changeBasket(word, 0);
     }
 }

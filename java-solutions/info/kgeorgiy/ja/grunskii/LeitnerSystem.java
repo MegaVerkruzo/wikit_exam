@@ -3,6 +3,7 @@ package info.kgeorgiy.ja.grunskii;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
@@ -13,33 +14,29 @@ import java.util.*;
  * This class has main logic about memorizing words
  */
 public class LeitnerSystem {
-    private ResourceBundle bundle;
-    /**
-     * This method accepts name of InputFile, locale and allows to memorize words
-     *
-     * @param args contains name of InputFile
-     */
-    public static void main(final String[] args) {
-        // launch
-        if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("Incorrect input");
-        }
-        // :NOTE: * NPE, AIOOBE
-        new LeitnerSystem().run(args[0], args[1]);
-    }
+    private final ResourceBundle bundle;
+    private final Path filePath;
+    private final Locale locale;
 
-    // This thing run
-    private void run(final String fileNameString, final String localeString) {
-        final Path filePath = Paths.get(fileNameString);
-        final Locale locale = new Locale.Builder().setLanguage(localeString).build();
+    /**
+     * This constructor make class with necessary data.
+     *
+     * @param file - is location of dictionary
+     * @param locale - is locale for user
+     */
+    public LeitnerSystem(Path file, Locale locale) {
+        this.filePath = file;
+        this.locale = locale;
         // :NOTE: * Platform-dependent path
         bundle = ResourceBundle.getBundle(Paths.get("info", "kgeorgiy", "ja", "grunskii", "LanguageBundle").toString(), locale);
+    }
+
+    public void run() {
         final Data data = loadData(filePath, locale);
         printIntroduction();
         startMemorize(data, locale);
     }
 
-    // loadData
     private Data loadData(final Path filePath, final Locale locale) {
         return new Data(filePath, locale);
     }
@@ -75,7 +72,7 @@ public class LeitnerSystem {
                 System.out.println(getMessage(locale, "CorrectAnswer"));
                 data.increaseBasket(word);
             } else if (quire.toLowerCase(locale).equals(bundle.getString("Help"))) {
-                writeBaskets(data.baskets);
+                writeBaskets(data.getBaskets());
             } else {
                 System.out.println(getMessage(locale, "WrongAnswer", correctAnswer));
                 data.setFirstBasket(word);
