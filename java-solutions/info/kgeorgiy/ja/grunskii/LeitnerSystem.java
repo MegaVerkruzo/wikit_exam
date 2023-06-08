@@ -3,7 +3,6 @@ package info.kgeorgiy.ja.grunskii;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
@@ -32,13 +31,9 @@ public class LeitnerSystem {
     }
 
     public void run() {
-        final Data data = loadData(filePath, locale);
+        final Data data = new Data(filePath);
         printIntroduction();
         startMemorize(data, locale);
-    }
-
-    private Data loadData(final Path filePath, final Locale locale) {
-        return new Data(filePath, locale);
     }
 
     private void printIntroduction() {

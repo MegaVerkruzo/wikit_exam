@@ -10,11 +10,10 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * This class parse *_save.txt files and getting parsed data.
+ * This class parse .save_*.txt or *.txt files and getting parsed data.
  */
 public final class Data {
     private final Random random = new Random();
-
     private final List<Map<String, String>> baskets;
     private final Map<String, WordInfo> words = new HashMap<>();
 
@@ -30,14 +29,19 @@ public final class Data {
         return baskets;
     }
 
-    public Data(final Path fileDictionary, final Locale locale) {
+    /**
+     * This constructor create data model.
+     *
+     * @param fileDictionary is dictionary.
+     */
+    public Data(final Path fileDictionary) {
+        // Reading dictionary file.
         List<Map<String, String>> currentBaskets;
         Map<String, String> currentWords;
         try {
             final List<String> lines = Files.readAllLines(fileDictionary, StandardCharsets.UTF_8);
 
             currentWords = getWords(lines);
-
         } catch (final IOException e) {
             currentWords = null;
             System.err.println("Can't read input dictionary");
