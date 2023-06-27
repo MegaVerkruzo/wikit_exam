@@ -3,6 +3,7 @@ package info.kgeorgiy.ja.grunskii;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
@@ -14,26 +15,25 @@ import java.util.*;
  */
 public class LeitnerSystem {
     private final ResourceBundle bundle;
-    private final Path filePath;
     private final Locale locale;
+    private final Data data;
 
     /**
      * This constructor make class with necessary data.
      *
      * @param file - is location of dictionary
-     * @param locale - is locale for user
+
      */
     public LeitnerSystem(Path file, Locale locale) {
-        this.filePath = file;
         this.locale = locale;
+        data = new Data(file);
         // :NOTE: * Platform-dependent path
         bundle = ResourceBundle.getBundle(Paths.get("info", "kgeorgiy", "ja", "grunskii", "LanguageBundle").toString(), locale);
     }
 
     public void run() {
-        final Data data = new Data(filePath);
         printIntroduction();
-        startMemorize(data, locale);
+        startMemorize();
     }
 
     private void printIntroduction() {
@@ -42,18 +42,17 @@ public class LeitnerSystem {
     }
 
     // :NOTE: * Extra "locale" parameter instead of field
-    private String getWord(final Data data, final Locale locale) {
+    private String getWord() {
         final String result = data.getRandomWord();
-        System.out.println(getMessage(locale, "Translate", result));
+        System.out.println(getMessage("Translate", result));
         return result;
     }
 
-    private void startMemorize(final Data data, final Locale locale) {
+    private void startMemorize() {
         while (true) {
-            final String word = getWord(data, locale);
+            final String word = getWord();
             final String correctAnswer = data.getCorrectTranslate(word);
-            // :NOTE: - No encoding specified
-            final BufferedReader reader =new BufferedReader(new InputStreamReader(System.in));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
             String quire;
             try {
                 quire = reader.readLine().trim();
@@ -64,12 +63,12 @@ public class LeitnerSystem {
                 System.exit(1);
             }
             if (quire.toLowerCase(locale).equals(correctAnswer))  {
-                System.out.println(getMessage(locale, "CorrectAnswer"));
+                System.out.println(getMessage("CorrectAnswer"));
                 data.increaseBasket(word);
             } else if (quire.toLowerCase(locale).equals(bundle.getString("Help"))) {
                 writeBaskets(data.getBaskets());
             } else {
-                System.out.println(getMessage(locale, "WrongAnswer", correctAnswer));
+                System.out.println(getMessage("WrongAnswer", correctAnswer));
                 data.setFirstBasket(word);
             }
         }
@@ -83,7 +82,7 @@ public class LeitnerSystem {
         }
     }
 
-    private String getMessage(final Locale locale, final String patternInBundle, final Object... values) {
+    private String getMessage(final String patternInBundle, final Object... values) {
         // :NOTE: * MessageFormat not reused
         final MessageFormat messageFormat = new MessageFormat(bundle.getString(patternInBundle), locale);
         return messageFormat.format(values);

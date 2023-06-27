@@ -3,10 +3,7 @@ package info.kgeorgiy.ja.grunskii;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.IllformedLocaleException;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * This class allows to launch memorize from console

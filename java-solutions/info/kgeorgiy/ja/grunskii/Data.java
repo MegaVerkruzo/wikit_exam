@@ -13,6 +13,7 @@ import static java.lang.Math.*;
  * This class parse .save_*.txt or *.txt files and getting parsed data.
  */
 public final class Data {
+    private final int basketsCount = 10;
     private final Random random = new Random();
     private final List<Map<String, String>> baskets;
     private final Map<String, WordInfo> words = new HashMap<>();
@@ -48,14 +49,15 @@ public final class Data {
             System.exit(1);
         }
 
+        if (Files.exists(getSaveFileName(fileDictionary))) {
+
+        }
         try {
             final List<String> lines = Files.readAllLines(getSaveFileName(fileDictionary), StandardCharsets.UTF_8);
 
             currentBaskets = getBuckets(lines);
         } catch (final IOException e) {
             currentBaskets = null;
-            System.err.println("Can't read input dictionary");
-            System.exit(1);
         }
 
         {
@@ -65,7 +67,7 @@ public final class Data {
             }
 
             if (!check.equals(currentWords)) {
-                baskets = new ArrayList<>(Collections.nCopies(10, new HashMap<>()));
+                baskets = new ArrayList<>(Collections.nCopies(basketsCount, new HashMap<>()));
                 baskets.get(0).putAll(currentWords);
             } else {
                 baskets = currentBaskets;
@@ -83,7 +85,7 @@ public final class Data {
         int bucket = 0;
         int nextLineBucket = 0;
         int firstIndex = 0;
-        while (bucket < 10) {
+        while (bucket < basketsCount) {
             for (int j = firstIndex + 1; j < lines.size(); ++j) {
                 final String line = lines.get(j);
                 if (line.length() == 1 && Character.isDigit(line.charAt(0)) || line.equals("words:")) {
@@ -119,22 +121,30 @@ public final class Data {
         return words.getOrDefault(expression, new WordInfo("---", 0)).translated;
     }
 
-    public String getRandomWord() {
-        final List<Map.Entry<String, WordInfo>> entryList = words.entrySet().stream().toList();
+    double getBasketsDistribution(int n) {
+        return n * pow(1.5, -n);
+    }
 
-        // :NOTE: * O(N)
-        // :NOTE: * List<Double>
-        final List<Double> results = entryList.stream().map(entry -> pow(1.5,- entry.getValue().basket)).toList();
-        final Double sum = results.stream().mapToDouble(Double::doubleValue).sum();
+    public String getRandomWord() {
+        double sum = baskets
+                .stream()
+                .map(Map::size)
+                .mapToDouble(this::getBasketsDistribution)
+                .sum();
         double rand = random.nextDouble() * sum;
 
-        for (int i = 0; i < results.size(); ++i) {
-            if (rand > results.get(i)) {
-                rand -= results.get(i);
+        for (Map<String, String> basket : baskets) {
+            double probability = getBasketsDistribution(basket.size());
+
+            if (rand > probability) {
+                rand -= probability;
             } else {
-                return entryList.get(i).getKey();
+                int randomWordIndex = (int) (random.nextDouble() * baskets.size());
+
+                return basket.values().stream().toList().get(randomWordIndex);
             }
         }
+
         return "";
     }
 
