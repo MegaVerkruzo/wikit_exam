@@ -1,24 +1,20 @@
 package info.kgeorgiy.ja.grunskii;
 
+// :NOTE: # JSoup
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
-import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This class allows to send quires to wikipedia and getting answers
@@ -38,7 +34,7 @@ public class Wikit implements Runnable {
     public static void main(final String[] args) {
         if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
             System.err.println("Incorrect input - example of correct: Wikit [ru, en, uk...] [ru, en]");
-            throw new RuntimeException();
+            return;
         }
 
         try {
@@ -48,7 +44,7 @@ public class Wikit implements Runnable {
             new Wikit(wiki, user).run();
         } catch (final IllformedLocaleException e) {
             System.err.println("Incorrect input - example of correct: Wikit [ru, en, uk...] [ru, en]");
-            throw new RuntimeException();
+            return;
         }
     }
 
@@ -58,11 +54,13 @@ public class Wikit implements Runnable {
      * @param wiki is locale of wikipedia page
      * @param user is locale of user interface
      */
-    public Wikit(Locale wiki, Locale user) {
+    public Wikit(final Locale wiki, final Locale user) {
         this.wiki = wiki;
         this.host  = wiki.getLanguage() + ".wikipedia.org";
+        // :NOTE: - unused host
         this.prefixQuire = "https://" + wiki.getLanguage() + ".wikipedia.org/w/index.php?";
         this.user = user;
+        // :NOTE: * Root module
         this.bundle = ResourceBundle.getBundle("WikitBundle", user);
     }
 
@@ -73,50 +71,64 @@ public class Wikit implements Runnable {
     public void run() {
         System.out.println(bundle.getString("Help"));
         while (true) {
+            // :NOTE: - System.in in UTF-8
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-            String quire;
+            final String query;
             try {
-                quire = reader.readLine().trim();
-                List<String> arguments = List.of(quire.split(" "));
+                query = reader.readLine().trim();
+                // :NOTE: * Spaces in query
+                final List<String> arguments = List.of(query.split(" ", 2));
                 if (arguments.size() != 2) {
                     System.err.println("Wrong amount of arguments, write correct commands!");
                     continue;
                 }
 
-                String command = arguments.get(0);
-                String article = arguments.get(1);
+                final String command = arguments.get(0);
+                final String article = arguments.get(1);
                 if (command.equals(bundle.getString("Search"))) {
                     System.out.println(String.join("\n", findArticle(article)));
                 } else if (command.equals(bundle.getString("Find"))) {
-
+                    // :NOTE: # Find not implemented
                 } else if (command.equals(bundle.getString("Download"))) {
-                    List<String> lines = findArticle(arguments.get(1));
-                    Path file = Paths.get("files", article);
-                    if (Files.exists(file)) Files.delete(file);
-                    Files.createFile(file);
-                    Files.write(file, lines, StandardCharsets.UTF_8);
+                    final List<String> lines = findArticle(arguments.get(1));
+                    final Path file = Paths.get("files", article);
+                    // :NOTE: * CREATE
+//                    if (Files.exists(file)) Files.delete(file);
+//                    Files.createFile(file);
+                    Files.write(file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE);
                 }
-            } catch (IOException e) {
+            } catch (final IOException e) {
+                // :NOTE: * throw new RuntimeException(e);
                 throw new RuntimeException(e);
             }
         }
     }
 
     private List<String> findArticle(final String article) {
-        List<String> lines = new ArrayList<>();
+        final Document doc;
         try {
-            Document doc = Jsoup.connect(prefixQuire + "search=" + article).get();
-            Element parent = Objects.requireNonNull(Objects.requireNonNull(doc.getElementById("bodyContent")).getElementById("mw-content-text")).getElementsByClass("mw-parser-output").first();
-
-            for (Element elem : Objects.requireNonNull(parent).children()) {
-                if (elem.tag().equals(Tag.valueOf("p"))) {
-                    lines.add(elem.text());
-                } else if (elem.tag().equals(Tag.valueOf("h2"))) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
+            doc = Jsoup.connect(prefixQuire + "search=" + article).get();
+            // :NOTE: * Objects.requireNonNull
+        } catch (final IOException e) {
+            // :NOTE: * Error handling
             System.err.println(bundle.getString("Exception_Article"));
+            return List.of();
+        }
+
+        final Element parent = doc
+                .getElementById("bodyContent")
+                .getElementById("mw-content-text")
+                .getElementsByClass("mw-parser-output")
+                .first();
+
+        final List<String> lines = new ArrayList<>();
+        for (final Element elem : parent.children()) {
+            // :NOTE: - -> const
+            if (elem.tag().equals(Tag.valueOf("p"))) {
+                lines.add(elem.text());
+            } else if (elem.tag().equals(Tag.valueOf("h2"))) {
+                break;
+            }
         }
         return lines;
     }
