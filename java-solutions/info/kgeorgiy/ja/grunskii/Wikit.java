@@ -1,6 +1,5 @@
 package info.kgeorgiy.ja.grunskii;
 
-// :NOTE: # JSoup
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -57,10 +56,8 @@ public class Wikit implements Runnable {
     public Wikit(final Locale wiki, final Locale user) {
         this.wiki = wiki;
         this.host  = wiki.getLanguage() + ".wikipedia.org";
-        // :NOTE: - unused host
         this.prefixQuire = "https://" + wiki.getLanguage() + ".wikipedia.org/w/index.php?";
         this.user = user;
-        // :NOTE: * Root module
         this.bundle = ResourceBundle.getBundle("WikitBundle", user);
     }
 
@@ -71,12 +68,10 @@ public class Wikit implements Runnable {
     public void run() {
         System.out.println(bundle.getString("Help"));
         while (true) {
-            // :NOTE: - System.in in UTF-8
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
             final String query;
             try {
                 query = reader.readLine().trim();
-                // :NOTE: * Spaces in query
                 final List<String> arguments = List.of(query.split(" ", 2));
                 if (arguments.size() != 2) {
                     System.err.println("Wrong amount of arguments, write correct commands!");
@@ -88,17 +83,12 @@ public class Wikit implements Runnable {
                 if (command.equals(bundle.getString("Search"))) {
                     System.out.println(String.join("\n", findArticle(article)));
                 } else if (command.equals(bundle.getString("Find"))) {
-                    // :NOTE: # Find not implemented
                 } else if (command.equals(bundle.getString("Download"))) {
                     final List<String> lines = findArticle(arguments.get(1));
                     final Path file = Paths.get("files", article);
-                    // :NOTE: * CREATE
-//                    if (Files.exists(file)) Files.delete(file);
-//                    Files.createFile(file);
                     Files.write(file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE);
                 }
             } catch (final IOException e) {
-                // :NOTE: * throw new RuntimeException(e);
                 throw new RuntimeException(e);
             }
         }
@@ -108,9 +98,7 @@ public class Wikit implements Runnable {
         final Document doc;
         try {
             doc = Jsoup.connect(prefixQuire + "search=" + article).get();
-            // :NOTE: * Objects.requireNonNull
         } catch (final IOException e) {
-            // :NOTE: * Error handling
             System.err.println(bundle.getString("Exception_Article"));
             return List.of();
         }
@@ -123,7 +111,6 @@ public class Wikit implements Runnable {
 
         final List<String> lines = new ArrayList<>();
         for (final Element elem : parent.children()) {
-            // :NOTE: - -> const
             if (elem.tag().equals(Tag.valueOf("p"))) {
                 lines.add(elem.text());
             } else if (elem.tag().equals(Tag.valueOf("h2"))) {
