@@ -19,10 +19,15 @@ import java.util.*;
  * This class allows to send quires to wikipedia and getting answers
  */
 public class Wikit implements Runnable {
+    private static final String LAUNCH_ERROR_MESSAGE = """
+            Incorrect Program arguments
+            Usage: Wikit [Wikipedia language] [Interface language]
+                    
+            Wikipedia language - Language code for the content you want to search on Wikipedia (e.g., 'en' for English, 'ru' for Russian, etc.)
+            Interface language - Language code for the output messages in the console, available only [ru, en]
+            """;
+
     private final String prefixQuire;
-    private final String host;
-    private final Locale wiki;
-    private final Locale user;
     private final ResourceBundle bundle;
 
     /**
@@ -32,33 +37,38 @@ public class Wikit implements Runnable {
      */
     public static void main(final String[] args) {
         if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("Incorrect input - example of correct: Wikit [ru, en, uk...] [ru, en]");
+            System.err.println(LAUNCH_ERROR_MESSAGE);
             return;
         }
 
         try {
-            final Locale wiki = new Locale.Builder().setLanguage(args[0]).build();
-            final Locale user = new Locale.Builder().setLanguage(args[1]).build();
-
-            new Wikit(wiki, user).run();
+            new Wikit(getLocale(args[0]), getLocale(args[1])).run();
         } catch (final IllformedLocaleException e) {
-            System.err.println("Incorrect input - example of correct: Wikit [ru, en, uk...] [ru, en]");
-            return;
+            System.err.println(LAUNCH_ERROR_MESSAGE);
         }
+    }
+
+    private static Locale getLocale(String language) throws IllformedLocaleException {
+        return new Locale.Builder().setLanguage(language).build();
     }
 
     /**
      * It's constructor of this class
      *
      * @param wiki is locale of wikipedia page
-     * @param user is locale of user interface
+     * @param userLocale is locale of user interface
      */
-    public Wikit(final Locale wiki, final Locale user) {
-        this.wiki = wiki;
-        this.host  = wiki.getLanguage() + ".wikipedia.org";
+    public Wikit(final Locale wiki, final Locale userLocale) {
+        this.bundle = ResourceBundle.getBundle("WikitBundle", userLocale);
         this.prefixQuire = "https://" + wiki.getLanguage() + ".wikipedia.org/w/index.php?";
-        this.user = user;
-        this.bundle = ResourceBundle.getBundle("WikitBundle", user);
+    }
+
+    private void printTranslatedText(String textName) {
+        System.out.println(bundle.getString(textName));
+    }
+
+    private void printTranslatedErrorText(String textName) {
+        System.err.println(bundle.getString(textName));
     }
 
     /**
@@ -66,7 +76,7 @@ public class Wikit implements Runnable {
      */
     @Override
     public void run() {
-        System.out.println(bundle.getString("Help"));
+        printTranslatedText("Help");
         while (true) {
             final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
             final String query;
@@ -74,6 +84,8 @@ public class Wikit implements Runnable {
                 query = reader.readLine().trim();
                 final List<String> arguments = List.of(query.split(" ", 2));
                 if (arguments.size() != 2) {
+                    printTranslatedErrorText("");
+                    printTranslatedText("Help");
                     System.err.println("Wrong amount of arguments, write correct commands!");
                     continue;
                 }
