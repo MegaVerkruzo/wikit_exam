@@ -84,9 +84,9 @@ public class Wikit implements Runnable {
                 query = reader.readLine().trim();
                 final List<String> arguments = List.of(query.split(" ", 2));
                 if (arguments.size() != 2) {
-                    printTranslatedErrorText("");
-                    printTranslatedText("Help");
+//                    printTranslatedErrorText("");
                     System.err.println("Wrong amount of arguments, write correct commands!");
+                    printTranslatedText("Help");
                     continue;
                 }
 
